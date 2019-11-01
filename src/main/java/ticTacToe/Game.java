@@ -764,8 +764,8 @@ public class Game {
 		{
 			String cur=iter.next();
 			String next=null;
-			switch (cur) {
-				case "-x": 
+			if (cur.equals("-x")) {
+				
 					next=iter.next();
 					if (next==null || next.startsWith("-"))
 					{
@@ -809,8 +809,9 @@ public class Game {
 						return;
 						
 					}
-					break;
-				case "-o":
+			}
+			else if (cur.equals("-o")) {
+				
 					next=iter.next();
 					
 					if (next==null || next.startsWith("-"))
@@ -853,8 +854,10 @@ public class Game {
 						return;
 						
 					}
-					break;
-				case "-s":
+				
+			}
+			else if (cur.equals("-s")) {
+			
 					next=iter.next();
 					if (next==null)
 					{
@@ -870,7 +873,7 @@ public class Game {
 						System.out.println("Error: -s should be followed by the agent that starts first: x or o");
 						return;
 					}
-					break;
+					
 				
 			}
 				
