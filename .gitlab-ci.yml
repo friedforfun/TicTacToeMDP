@@ -1,4 +1,4 @@
 junit:
   script:
     - mvn -version
-    - mvn -source 7 clean test
+    - mvn clean test -source 7
