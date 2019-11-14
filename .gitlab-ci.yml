@@ -1,3 +1,4 @@
 junit:
   script:
+    - mvn -version
     - mvn clean test
