@@ -102,8 +102,23 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public void iterate()
 	{
-		/* YOUR CODE HERE
-		 */
+		for (int i = 0; i<k; i++){
+			for(Game g : valueFunction.keySet()){
+				double vMax = -Double.MAX_VALUE; // The highest V over all actions, init to large negative number
+				for(Move m : g.getPossibleMoves()){
+					double vm = 0;
+					for(TransitionProb t : mdp.generateTransitions(g,m)){
+						// t.outcome has (s,a,r,s')
+						// double probability = t.prob
+						vm += t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+					}
+					// update vMax with new higher V
+					if (vm > vMax) vMax = vm;
+				}
+				// update valueFunction with new vMax
+				valueFunction.put(g,vMax);
+			}
+		}
 	}
 	
 	/**This method should be run AFTER the train method to extract a policy according to {@link ValueIterationAgent#valueFunction}
