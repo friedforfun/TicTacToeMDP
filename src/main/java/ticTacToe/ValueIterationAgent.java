@@ -34,7 +34,7 @@ public class ValueIterationAgent extends Agent {
 	/**
 	 * the number of iterations to perform - feel free to change this/try out different numbers of iterations
 	 */
-	int k=10;
+	int k=20;
 	
 	
 	/**
@@ -102,21 +102,34 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public void iterate()
 	{
-		for (int i = 0; i<k; i++){
-			for(Game g : valueFunction.keySet()){
+		for (int i = 0; i < k; i++){
+			for(Game g : this.valueFunction.keySet()){
+
+				if(g.isTerminal()){
+					valueFunction.put(g, Double.MIN_VALUE);
+					continue;
+				}
+
 				double vMax = -Double.MAX_VALUE; // The highest V over all actions, init to large negative number
+
 				for(Move m : g.getPossibleMoves()){
 					double vm = 0;
+
 					for(TransitionProb t : mdp.generateTransitions(g,m)){
 						// t.outcome has (s,a,r,s')
 						// double probability = t.prob
-						vm += t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+						double temp = t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+						vm = vm + temp;
 					}
 					// update vMax with new higher V
-					if (vm > vMax) vMax = vm;
+					//System.out.println("The move"+m.toString()+"\n In game:"+g.toString()+"\n has vm of: "+String.valueOf(vm));
+					if (vm > vMax) {
+						vMax = vm;
+					}
 				}
 				// update valueFunction with new vMax
-				valueFunction.put(g,vMax);
+
+				this.valueFunction.put(g,vMax);
 			}
 		}
 	}
@@ -130,14 +143,12 @@ public class ValueIterationAgent extends Agent {
 	public Policy extractPolicy()
 	{
 		Policy p = new Policy();
-		for(Game g : valueFunction.keySet()){
-			double optimalV = valueFunction.get(g);
+		for(Game g : this.valueFunction.keySet()){
+			double optimalV = this.valueFunction.get(g);
 			for (Move m : g.getPossibleMoves()){
 				double vm = 0;
 				for(TransitionProb t : mdp.generateTransitions(g,m)){
-					// t.outcome has (s,a,r,s')
-					// double probability = t.prob
-					vm += t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+					vm += t.prob*(t.outcome.localReward+(discount*valueFunction.get(t.outcome.sPrime)));
 				}
 				if (vm == optimalV){
 					p.policy.put(g,m);
