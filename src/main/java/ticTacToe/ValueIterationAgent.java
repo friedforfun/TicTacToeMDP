@@ -129,10 +129,23 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public Policy extractPolicy()
 	{
-		/*
-		 * YOUR CODE HERE
-		 */
-		return null;
+		Policy p = new Policy();
+		for(Game g : valueFunction.keySet()){
+			double optimalV = valueFunction.get(g);
+			for (Move m : g.getPossibleMoves()){
+				double vm = 0;
+				for(TransitionProb t : mdp.generateTransitions(g,m)){
+					// t.outcome has (s,a,r,s')
+					// double probability = t.prob
+					vm += t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+				}
+				if (vm == optimalV){
+					p.policy.put(g,m);
+					break;
+				}
+			}
+		}
+		return p;
 	}
 	
 	/**
