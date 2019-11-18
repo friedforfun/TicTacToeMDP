@@ -1,10 +1,8 @@
 package ticTacToe;
 
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
 /**
  * A policy iteration agent. You should implement the following methods:
  * (1) {@link PolicyIterationAgent#evaluatePolicy}: this is the policy evaluation step from your lectures
@@ -111,11 +109,14 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	public void initRandomPolicy()
 	{
-		/*
-		 * YOUR CODE HERE
-		 *  Looks easy to start here.
-		 */
-
+		Random r = new Random();
+		List<Game> game = Game.generateAllValidGames('X');
+		for (Game g : this.policyValues.keySet()){
+			if (g.isTerminal())
+				continue;
+			List<Move> moveList = g.getPossibleMoves();
+			this.curPolicy.put(g, moveList.get(r.nextInt(moveList.size())));
+		}
 	}
 	
 	
@@ -129,11 +130,51 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	protected void evaluatePolicy(double delta)
 	{
-		/* YOUR CODE HERE */
-		
-		
+		// copy policyPrime into np
+		Policy np = new Policy(curPolicy);
+		// new policy iteration agent with the new policy
+		PolicyIterationAgent pia = new PolicyIterationAgent(np);
+		pia.policyValues = this.policyValues;
+		pia.curPolicy = this.curPolicy;
+		//System.out.println("Begin Evaluate policy");
+
+
+		for (Game g : pia.policyValues.keySet()){
+			System.out.println("Evaluate policy for: "+g.toString());
+//			if (g.isTerminal()){
+//				pia.policyValues.put(g, 0.0);
+//				continue;
+//			}
+			double v, lastV;
+			do {
+				v = 0;
+				for (TransitionProb t : pia.mdp.generateTransitions(g, pia.curPolicy.get(g))) {
+					double temp = t.prob * (t.outcome.localReward + (discount * pia.policyValues.get(t.outcome.sPrime)));
+					v = v + temp;
+				}
+				lastV = pia.policyValues.get(g);
+				pia.policyValues.put(g, v);
+				// until V values converge for this policy
+
+				System.out.println("Not converging!");
+
+			} while (!converges(delta, pia.policyValues.get(g), lastV));
+
+			System.out.println("Converged!");
+
+		}
+		// update original policy values with new values
+		this.policyValues = pia.policyValues;
 	}
-		
+
+	// Small helper method to check if a and b converges
+	private boolean converges(double delta, double a, double b){
+		// make sure all numbers are positive
+		delta = Math.abs(delta);
+		if (Math.abs(a-b) <= delta)
+			return true;
+		else return false;
+	}
 	
 	
 	/**This method should be run AFTER the {@link PolicyIterationAgent#evaluatePolicy} train method to improve the current policy according to 
@@ -144,9 +185,33 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	protected boolean improvePolicy()
 	{
-		/* YOUR CODE HERE */
-		
-		return false;
+		Policy np = new Policy(curPolicy);
+		PolicyIterationAgent pia = new PolicyIterationAgent(np);
+		pia.policyValues = this.policyValues;
+		pia.curPolicy = this.curPolicy;
+
+		//System.out.println("This is executing");
+		for(Game g : pia.policyValues.keySet()){
+			System.out.println("Nothing is executing");
+			double vMax = -Double.MAX_VALUE;
+			for (Move m : g.getPossibleMoves()){
+				double vm = 0;
+				for(TransitionProb t : pia.mdp.generateTransitions(g,m)){
+					vm += t.prob*(t.outcome.localReward+(discount*pia.policyValues.get(t.outcome.sPrime)));
+				}
+				if (vm > vMax){
+					vMax = vm;
+					pia.curPolicy.put(g,m);
+				}
+			}
+		}
+
+		if (pia.curPolicy == this.curPolicy)
+			return false;
+		else{
+			this.curPolicy = pia.curPolicy;
+			return true;
+		}
 	}
 	
 	/**
@@ -161,10 +226,9 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	public void train()
 	{
-		/* YOUR CODE HERE */
-		
-		
-		
+		do{
+			this.evaluatePolicy(delta);
+		}while(this.improvePolicy());
 	}
 	
 	public static void main(String[] args) throws IllegalMoveException
