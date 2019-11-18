@@ -104,31 +104,27 @@ public class ValueIterationAgent extends Agent {
 	{
 		for (int i = 0; i < k; i++){
 			for(Game g : this.valueFunction.keySet()){
-
 				if(g.isTerminal()){
-					valueFunction.put(g, Double.MIN_VALUE);
+					this.valueFunction.put(g, 0.0);
 					continue;
 				}
-
 				double vMax = -Double.MAX_VALUE; // The highest V over all actions, init to large negative number
 
 				for(Move m : g.getPossibleMoves()){
 					double vm = 0;
 
 					for(TransitionProb t : mdp.generateTransitions(g,m)){
+						// the utility of performing this move
 						// t.outcome has (s,a,r,s')
-						// double probability = t.prob
-						double temp = t.prob*(t.outcome.localReward+(discount* valueFunction.get(t.outcome.sPrime)));
+						double temp = t.prob*(t.outcome.localReward+(discount* this.valueFunction.get(t.outcome.sPrime)));
 						vm = vm + temp;
 					}
 					// update vMax with new higher V
-					//System.out.println("The move"+m.toString()+"\n In game:"+g.toString()+"\n has vm of: "+String.valueOf(vm));
 					if (vm > vMax) {
 						vMax = vm;
 					}
 				}
 				// update valueFunction with new vMax
-
 				this.valueFunction.put(g,vMax);
 			}
 		}
@@ -148,7 +144,7 @@ public class ValueIterationAgent extends Agent {
 			for (Move m : g.getPossibleMoves()){
 				double vm = 0;
 				for(TransitionProb t : mdp.generateTransitions(g,m)){
-					vm += t.prob*(t.outcome.localReward+(discount*valueFunction.get(t.outcome.sPrime)));
+					vm += t.prob*(t.outcome.localReward+(discount*this.valueFunction.get(t.outcome.sPrime)));
 				}
 				if (vm == optimalV){
 					p.policy.put(g,m);
