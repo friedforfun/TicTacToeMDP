@@ -173,7 +173,7 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	protected boolean improvePolicy()
 	{
-		// save deep copy reference to old policy for comparison later
+		// save deep copy of old policy for comparison later
 		Policy np = new Policy();
 		np.policy = deepcopy(this.curPolicy);
 
