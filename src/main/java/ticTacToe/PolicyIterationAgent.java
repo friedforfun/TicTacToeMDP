@@ -203,7 +203,7 @@ public class PolicyIterationAgent extends Agent {
 
 	// helper method to deep copy a HashMap
 	private static HashMap<Game, Move> deepcopy (HashMap<Game, Move> original) {
-		HashMap<Game, Move> copy = new HashMap<>();
+		HashMap<Game, Move> copy = new HashMap<Game, Move>();
 		for (Map.Entry<Game, Move> entry : original.entrySet())
 		{
 			copy.put(entry.getKey(), entry.getValue());
