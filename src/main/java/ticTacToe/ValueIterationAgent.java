@@ -102,22 +102,21 @@ public class ValueIterationAgent extends Agent {
 	 */
 	public void iterate()
 	{
+		// perform k steps expectimax
 		for (int i = 0; i < k; i++){
 			for(Game g : this.valueFunction.keySet()){
 				if(g.isTerminal()){
 					this.valueFunction.put(g, 0.0);
 					continue;
 				}
-				double vMax = -Double.MAX_VALUE; // The highest V over all actions, init to large negative number
 
+				double vMax = -Double.MAX_VALUE; // The highest V over all actions, init to large negative number
 				for(Move m : g.getPossibleMoves()){
 					double vm = 0;
-
 					for(TransitionProb t : mdp.generateTransitions(g,m)){
-						// the utility of performing this move
+						// compute the total utility of performing this move
 						// t.outcome has (s,a,r,s')
-						double temp = t.prob*(t.outcome.localReward+(discount* this.valueFunction.get(t.outcome.sPrime)));
-						vm = vm + temp;
+						vm += t.prob*(t.outcome.localReward+(discount* this.valueFunction.get(t.outcome.sPrime)));
 					}
 					// update vMax with new higher V
 					if (vm > vMax) {
@@ -139,6 +138,8 @@ public class ValueIterationAgent extends Agent {
 	public Policy extractPolicy()
 	{
 		Policy p = new Policy();
+
+		// perform expectimax same as iterate but without looping over k
 		for(Game g : this.valueFunction.keySet()){
 			double optimalV = this.valueFunction.get(g);
 			for (Move m : g.getPossibleMoves()){
@@ -146,7 +147,9 @@ public class ValueIterationAgent extends Agent {
 				for(TransitionProb t : mdp.generateTransitions(g,m)){
 					vm += t.prob*(t.outcome.localReward+(discount*this.valueFunction.get(t.outcome.sPrime)));
 				}
-				if (vm == optimalV){
+
+				// check to see if the move calculated here has the same utility as the best move from k steps expectimax
+				if (Double.compare(vm, optimalV) == 0){
 					p.policy.put(g,m);
 					break;
 				}
