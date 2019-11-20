@@ -2,6 +2,7 @@ package ticTacToe;
 
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A policy iteration agent. You should implement the following methods:
@@ -46,8 +47,6 @@ public class PolicyIterationAgent extends Agent {
 		initValues();
 		initRandomPolicy();
 		train();
-		
-		
 	}
 	
 	
@@ -110,8 +109,9 @@ public class PolicyIterationAgent extends Agent {
 	public void initRandomPolicy()
 	{
 		Random r = new Random();
-		List<Game> game = Game.generateAllValidGames('X');
 		for (Game g : this.policyValues.keySet()){
+
+			// if g is terminal upper bound of r.nextInt would be 0 so skip it
 			if (g.isTerminal())
 				continue;
 			List<Move> moveList = g.getPossibleMoves();
@@ -130,47 +130,35 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	protected void evaluatePolicy(double delta)
 	{
-		// copy policyPrime into np
-		Policy np = new Policy(curPolicy);
-		// new policy iteration agent with the new policy
-		PolicyIterationAgent pia = new PolicyIterationAgent(np);
-		pia.policyValues = this.policyValues;
-		pia.curPolicy = this.curPolicy;
-		//System.out.println("Begin Evaluate policy");
-
-
-		for (Game g : pia.policyValues.keySet()){
-			System.out.println("Evaluate policy for: "+g.toString());
-//			if (g.isTerminal()){
-//				pia.policyValues.put(g, 0.0);
-//				continue;
-//			}
+		// Same as value iteration but without K and action loops
+		// calculates the utility of each movement from the given policy
+		for (Game g : this.policyValues.keySet()){
+			if (g.isTerminal()){
+				this.policyValues.put(g, 0.0);
+				continue;
+			}
 			double v, lastV;
 			do {
 				v = 0;
-				for (TransitionProb t : pia.mdp.generateTransitions(g, pia.curPolicy.get(g))) {
-					double temp = t.prob * (t.outcome.localReward + (discount * pia.policyValues.get(t.outcome.sPrime)));
-					v = v + temp;
+				for (TransitionProb t : this.mdp.generateTransitions(g, this.curPolicy.get(g))) {
+					v += t.prob * (t.outcome.localReward + (discount * this.policyValues.get(t.outcome.sPrime)));
 				}
-				lastV = pia.policyValues.get(g);
-				pia.policyValues.put(g, v);
+
+				// Store the utility of V(s) before we update with the new value
+				lastV = this.policyValues.get(g);
+				this.policyValues.put(g, v);
+
 				// until V values converge for this policy
-
-				System.out.println("Not converging!");
-
-			} while (!converges(delta, pia.policyValues.get(g), lastV));
-
-			System.out.println("Converged!");
+			} while (!converges(delta, this.policyValues.get(g), lastV));
 
 		}
-		// update original policy values with new values
-		this.policyValues = pia.policyValues;
 	}
 
-	// Small helper method to check if a and b converges
+	// helper method to check if a and b converges
 	private boolean converges(double delta, double a, double b){
 		// make sure all numbers are positive
 		delta = Math.abs(delta);
+
 		if (Math.abs(a-b) <= delta)
 			return true;
 		else return false;
@@ -185,33 +173,42 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	protected boolean improvePolicy()
 	{
-		Policy np = new Policy(curPolicy);
-		PolicyIterationAgent pia = new PolicyIterationAgent(np);
-		pia.policyValues = this.policyValues;
-		pia.curPolicy = this.curPolicy;
+		// save deep copy of old policy for comparison later
+		Policy np = new Policy();
+		np.policy = deepcopy(this.curPolicy);
 
-		//System.out.println("This is executing");
-		for(Game g : pia.policyValues.keySet()){
-			System.out.println("Nothing is executing");
-			double vMax = -Double.MAX_VALUE;
+		// single step expectimax over all game states and moves
+		for(Game g : this.curPolicy.keySet()){
+			double oldV = this.policyValues.get(g);
 			for (Move m : g.getPossibleMoves()){
 				double vm = 0;
-				for(TransitionProb t : pia.mdp.generateTransitions(g,m)){
-					vm += t.prob*(t.outcome.localReward+(discount*pia.policyValues.get(t.outcome.sPrime)));
+				for(TransitionProb t : this.mdp.generateTransitions(g,m)){
+					vm += t.prob*(t.outcome.localReward+(discount*this.policyValues.get(t.outcome.sPrime)));
 				}
-				if (vm > vMax){
-					vMax = vm;
-					pia.curPolicy.put(g,m);
+
+				// if this move has more utility that the previous move, then update.
+				if (vm > oldV){
+					oldV = vm;
+					this.curPolicy.put(g,m);
 				}
 			}
 		}
-
-		if (pia.curPolicy == this.curPolicy)
+		// compare current policy to deepcopy of last policy
+		if (this.curPolicy.equals(np.policy))
 			return false;
 		else{
-			this.curPolicy = pia.curPolicy;
 			return true;
 		}
+	}
+
+	// helper method to deep copy a HashMap
+	private static HashMap<Game, Move> deepcopy (HashMap<Game, Move> original) {
+		HashMap<Game, Move> copy = new HashMap<Game, Move>();
+		for (Map.Entry<Game, Move> entry : original.entrySet())
+		{
+			copy.put(entry.getKey(), entry.getValue());
+		}
+		return copy;
 	}
 	
 	/**
@@ -226,9 +223,14 @@ public class PolicyIterationAgent extends Agent {
 	 */
 	public void train()
 	{
+		// iterate over training until the policy stops improving
 		do{
 			this.evaluatePolicy(delta);
 		}while(this.improvePolicy());
+
+		// give policy to agent
+		Policy np = new Policy(curPolicy);
+		super.policy = np;
 	}
 	
 	public static void main(String[] args) throws IllegalMoveException
